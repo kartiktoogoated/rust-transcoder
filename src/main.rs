@@ -1,16 +1,21 @@
 mod config;
 mod db;
 mod api;
+mod tasks;
 
 use axum::{Router, routing::get};
 use tracing_subscriber;
 use db::connect;
+use std::fs;
 use config::load_env;
+
 
 #[tokio::main]
 async fn main() {
     load_env();
     tracing_subscriber::fmt::init();
+
+    fs::create_dir_all("outputs").unwrap();
 
     let pool = connect();
 

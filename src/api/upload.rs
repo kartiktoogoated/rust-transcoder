@@ -1,16 +1,10 @@
-use axum::{
-    Json, Router,
-    extract::{State},
-    http::StatusCode,
-    response::IntoResponse,
-    routing::post,
-};
-use axum_extra::extract::multipart::Multipart;
-use serde::{Serialize, Deserialize};
 use crate::db::DbPool;
+use crate::db::models::{TranscodeJob, Video};
+use crate::db::schema::{transcode_jobs, videos};
+use axum::{Json, Router, extract::State, http::StatusCode, response::IntoResponse, routing::post};
+use axum_extra::extract::multipart::Multipart;
 use diesel::prelude::*;
-use crate::db::models::{Video, TranscodeJob};
-use crate::db::schema::{videos, transcode_jobs};
+use serde::{Deserialize, Serialize};
 use std::{fs::create_dir_all, path::Path};
 use uuid::Uuid;
 
@@ -55,9 +49,15 @@ async fn upload(State(pool): State<DbPool>, mut multipart: Multipart) -> impl In
             diesel::insert_into(videos::table)
                 .values(&new_video)
                 .execute(&mut conn)
-        }).await.unwrap();
+        })
+        .await
+        .unwrap();
         if let Err(e) = insert_video {
-            return (StatusCode::INTERNAL_SERVER_ERROR, format!("DB error: {}", e)).into_response();
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("DB error: {}", e),
+            )
+                .into_response();
         }
 
         // Insert transcode job using Diesel
@@ -74,10 +74,25 @@ async fn upload(State(pool): State<DbPool>, mut multipart: Multipart) -> impl In
             diesel::insert_into(transcode_jobs::table)
                 .values(&new_job)
                 .execute(&mut conn)
-        }).await.unwrap();
+        })
+        .await
+        .unwrap();
         if let Err(e) = insert_job {
-            return (StatusCode::INTERNAL_SERVER_ERROR, format!("DB error: {}", e)).into_response();
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("DB error: {}", e),
+            )
+                .into_response();
         }
+
+        // Start transcoding task in background
+        let ffmpeg_pool = pool.clone();
+        let video_path_clone = file_path.to_string_lossy().to_string();
+
+        tokio::spawn(async move {
+            crate::tasks::transcoder::start_transcoding(ffmpeg_pool, video_path_clone, job_id)
+                .await;
+        });
 
         return (
             StatusCode::OK,
@@ -85,7 +100,8 @@ async fn upload(State(pool): State<DbPool>, mut multipart: Multipart) -> impl In
                 job_id,
                 message: "Video uploaded successfully".into(),
             }),
-        ).into_response();
+        )
+            .into_response();
     }
 
     (StatusCode::BAD_REQUEST, "No file found").into_response()
