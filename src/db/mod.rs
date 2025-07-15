@@ -1,12 +1,13 @@
-use sqlx::{PgPool, postgres::PgPoolOptions};
-use crate::config::get_database_url;
+use diesel::pg::PgConnection;
+use diesel::r2d2::{ConnectionManager, Pool};
 
-pub async fn connect() -> PgPool {
-    let database_url = get_database_url();
+pub type DbPool = Pool<ConnectionManager<PgConnection>>;
 
-    PgPoolOptions::new()
-        .max_connections(5)
-        .connect(&database_url)
-        .await
-        .expect("❌ Failed to connect to DB")
+pub fn connect() -> DbPool {
+    let db_url = std::env::var("DATABASE_URL").expect("DATABASE_URL not set");
+    let manager = ConnectionManager::<PgConnection>::new(db_url);
+    Pool::builder().build(manager).expect("Failed to create pool")
 }
+
+pub mod models;
+pub mod schema;
