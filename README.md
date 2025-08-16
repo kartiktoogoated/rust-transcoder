@@ -1,19 +1,5 @@
 # rust-transcoder
-
-rust_transcoder/
-├── Cargo.toml
-├── src/
-│   ├── main.rs              # Entry point
-│   ├── api/                 # Axum handlers
-│   │   ├── mod.rs
-│   │   └── video.rs
-│   ├── db/                  # Database logic
-│   │   ├── mod.rs
-│   │   └── models.rs        # SQLx structs + queries
-│   ├── ffmpeg/              # Transcoder logic
-│   │   └── mod.rs
-│   ├── tasks/               # Background task runner
-│   └── config.rs            # Env + config loading
+<img width="463" height="293" alt="Screenshot 2025-08-16 at 3 22 46 PM" src="https://github.com/user-attachments/assets/a46cfacd-eacf-4586-b320-0b4f13f56fd4" />
 
 | Purpose             | Tool                                |
 | ------------------- | ----------------------------------- |
