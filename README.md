@@ -11,4 +11,3 @@
 | Logging             | `tracing`                           |
 | Background tasks    | `tokio::spawn`, or real queue later |
 | Video processing    | FFmpeg via `Command`                |
-| Optional            | S3 / Cloud upload later             |
